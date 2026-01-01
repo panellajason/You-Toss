@@ -18,31 +18,20 @@ struct ContentView: View {
 
             SearchView()
                 .tabItem {
-                    Image(systemName: "magnifyingglass")
-                    Text("Search")
+                    Image(systemName: "play.circle")
+                    Text("Session")
                 }
 
-            ProfileView()
+            AccountView()
                 .tabItem {
                     Image(systemName: "person.circle.fill")
-                    Text("Profile")
+                    Text("Account")
                 }
         }
     }
 }
 
 // MARK: - Tab Views
-
-struct HomeView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "sparkles")
-                .font(.system(size: 48))
-            Text("Home Tab")
-                .font(.title)
-        }
-    }
-}
 
 struct SearchView: View {
     var body: some View {
