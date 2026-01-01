@@ -109,7 +109,7 @@ struct StartSessionView: View {
                     Button("Start Session") {
                         // 1️⃣ Map selectedPlayers dictionary to array of player dictionaries for Firestore
                         let playersForFirestore: [[String: Any]] = selectedPlayers.map { name, buyIn in
-                            ["username": name, "buyIn": buyIn]
+                            ["username": name, "buyIn": buyIn, "cashOut": 0]
                         }
 
                         // 2️⃣ Call createSession API

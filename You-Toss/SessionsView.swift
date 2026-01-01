@@ -26,6 +26,7 @@ struct SessionsView: View {
             let id = UUID()
             var name: String
             var buyIn: Double
+            var cashOut: Double
         }
         let groupName: String
         var players: [Player]
@@ -135,7 +136,7 @@ struct SessionsView: View {
                     activeSession = Session(
                         groupName: selectedGroup,
                         players: selectedPlayers.map { name, buyIn in
-                            Session.Player(name: name, buyIn: buyIn)
+                            Session.Player(name: name, buyIn: buyIn, cashOut: 0)
                         }
                     )
                 }
@@ -168,13 +169,32 @@ struct SessionsView: View {
             AddPlayersView(
                 allGroupPlayers: currentGroupMembers.filter { !currentSessionNames.contains($0) }
             ) { newPlayers in
-                let newSessionPlayers = newPlayers.map { Session.Player(name: $0, buyIn: 0) }
+                let newSessionPlayers = newPlayers.map { Session.Player(name: $0, buyIn: 0, cashOut: 0) }
                 activeSession?.players.append(contentsOf: newSessionPlayers)
             }
         }
         .sheet(isPresented: $showCashOut) {
             CashOutView(players: activeSession?.players ?? []) { updatedPlayers in
-                
+                guard let groupName = activeSession?.groupName else { return }
+
+                // Prepare players data for Firestore
+                let playersData: [[String: Any]] = updatedPlayers.map { player in
+                    [
+                        "username": player.name,
+                        "buyIn": player.buyIn,
+                        "cashOut": player.cashOut
+                    ]
+                }
+
+                // End session and update players in Firestore
+                sessionVM.endSessionWithPlayerData(groupName: groupName, players: playersData) { result in
+                    switch result {
+                    case .success:
+                        print("Session ended and players updated successfully")
+                    case .failure(let error):
+                        print("Failed to end session:", error.localizedDescription)
+                    }
+                }
                 activeSession = nil
             }
         }
@@ -190,10 +210,11 @@ struct SessionsView: View {
                     let players = playersArray.compactMap { dict -> SessionsView.Session.Player? in
                         guard
                             let username = dict["username"] as? String,
-                            let buyIn = dict["buyIn"] as? Double
+                            let buyIn = dict["buyIn"] as? Double,
+                            let cashOut = dict["cashOut"] as? Double
                         else { return nil }
 
-                        return SessionsView.Session.Player(name: username, buyIn: buyIn)
+                        return SessionsView.Session.Player(name: username, buyIn: buyIn, cashOut: cashOut)
                     }
 
                     if !players.isEmpty {

@@ -75,6 +75,50 @@ class SessionViewModel: ObservableObject {
             }
     }
     
+    func endSessionWithPlayerData(
+        groupName: String,
+        players: [[String: Any]] = [],
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        let db = Firestore.firestore()
+        
+        // Query the active session for the group
+        db.collection("sessions")
+            .whereField("group_name", isEqualTo: groupName)
+            .whereField("isActive", isEqualTo: true)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let document = snapshot?.documents.first else {
+                    completion(.failure(NSError(
+                        domain: "Firestore",
+                        code: 404,
+                        userInfo: [NSLocalizedDescriptionKey: "No active session found for this group"]
+                    )))
+                    return
+                }
+                
+                // Update isActive to false and optionally update players
+                var updateData: [String: Any] = ["isActive": false]
+                if !players.isEmpty {
+                    updateData["players"] = players
+                }
+                
+                db.collection("sessions").document(document.documentID)
+                    .updateData(updateData) { error in
+                        if let error = error {
+                            completion(.failure(error))
+                        } else {
+                            completion(.success(()))
+                        }
+                    }
+            }
+    }
+
+    
     func getActiveSessionForCurrentUser(completion: @escaping (Result<[String: Any], Error>) -> Void) {
         let db = Firestore.firestore()
         

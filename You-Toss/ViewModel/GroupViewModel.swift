@@ -157,19 +157,15 @@ class GroupViewModel: ObservableObject {
 
     func updateUserGroupScore(
         groupName: String,
+        username: String,
         newScore: Int,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
-        guard let uid = Auth.auth().currentUser?.uid else {
-            completion(.failure(NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "No current user logged in"])))
-            return
-        }
-        
         let db = Firestore.firestore()
         
-        // Query the user_groups document for this user and group
+        // Query the user_groups document for this username and group
         db.collection("user_groups")
-            .whereField("user_id", isEqualTo: uid)
+            .whereField("username", isEqualTo: username)
             .whereField("group_name", isEqualTo: groupName)
             .getDocuments { snapshot, error in
                 if let error = error {
@@ -178,7 +174,11 @@ class GroupViewModel: ObservableObject {
                 }
                 
                 guard let document = snapshot?.documents.first else {
-                    completion(.failure(NSError(domain: "Firestore", code: 404, userInfo: [NSLocalizedDescriptionKey: "User group not found"])))
+                    completion(.failure(NSError(
+                        domain: "Firestore",
+                        code: 404,
+                        userInfo: [NSLocalizedDescriptionKey: "User group not found"]
+                    )))
                     return
                 }
                 
@@ -193,6 +193,7 @@ class GroupViewModel: ObservableObject {
                     }
             }
     }
+
 
 
     func getAllGroupsForUser(

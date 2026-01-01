@@ -41,9 +41,9 @@ struct CashOutView: View {
                 var updatedPlayers = players
                 for i in 0..<updatedPlayers.count {
                     if let value = Double(cashOutAmounts[updatedPlayers[i].id] ?? "") {
-                        updatedPlayers[i].buyIn = value
+                        updatedPlayers[i].cashOut = value
                     } else {
-                        updatedPlayers[i].buyIn = 0
+                        updatedPlayers[i].cashOut = 0
                     }
                 }
 
