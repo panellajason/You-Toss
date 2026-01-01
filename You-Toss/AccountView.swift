@@ -9,6 +9,8 @@ import SwiftUI
 
 struct AccountView: View {
 
+    @StateObject private var authVM = AuthViewModel()
+
     // Placeholder for now
     let email: String = "user@email.com"
 
@@ -55,7 +57,11 @@ struct AccountView: View {
                     .padding(.vertical)
 
                 Button(action: {
-                    // Sign out later
+                    do {
+                        try authVM.signOut()
+                    } catch {
+                        print(error.localizedDescription)
+                    }
                 }) {
                     Text("Sign Out")
                         .fontWeight(.semibold)
