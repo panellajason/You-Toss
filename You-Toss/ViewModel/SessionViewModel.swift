@@ -74,6 +74,38 @@ class SessionViewModel: ObservableObject {
                     }
             }
     }
+    
+    func getActiveSessionForCurrentUser(completion: @escaping (Result<[String: Any], Error>) -> Void) {
+        let db = Firestore.firestore()
+        
+        // First, get the current user's home group
+        authVM.getCurrentUserHomeGroup { result in
+            switch result {
+            case .success(let groupName):
+                // Query active session for this group
+                db.collection("sessions")
+                    .whereField("group_name", isEqualTo: groupName)
+                    .whereField("isActive", isEqualTo: true)
+                    .getDocuments { snapshot, error in
+                        if let error = error {
+                            completion(.failure(error))
+                            return
+                        }
+                        
+                        guard let document = snapshot?.documents.first else {
+                            completion(.failure(NSError(domain: "Firestore", code: 404, userInfo: [NSLocalizedDescriptionKey: "No active session found for this group"])))
+                            return
+                        }
+                        
+                        completion(.success(document.data()))
+                    }
+                
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+
 
     func updateUserBuyIn(
         groupName: String,

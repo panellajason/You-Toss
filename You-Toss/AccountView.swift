@@ -5,19 +5,20 @@
 //  Created by Tony Hunt on 12/31/25.
 //
 
+import FirebaseAuth
 import SwiftUI
 
 struct AccountView: View {
 
     @StateObject private var authVM = AuthViewModel()
 
-    // Placeholder for now
-    let email: String = "user@email.com"
+    @State private var email: String = "Loading..."
+    @State private var username: String = "Loading..."
 
     var body: some View {
         VStack(spacing: 32) {
 
-            // Email header
+            // Email & username header
             VStack(spacing: 8) {
                 Image(systemName: "person.circle.fill")
                     .font(.system(size: 64))
@@ -26,6 +27,10 @@ struct AccountView: View {
                 Text(email)
                     .font(.headline)
                     .foregroundColor(.primary)
+
+                Text(username)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
             }
 
             // Main actions
@@ -86,8 +91,28 @@ struct AccountView: View {
             Spacer()
         }
         .padding()
+        .onAppear {
+            // Load email
+            if let currentEmail = Auth.auth().currentUser?.email {
+                self.email = currentEmail
+            } else {
+                self.email = "Unknown Email"
+            }
+
+            // Load username
+            authVM.getCurrentUserUsername { result in
+                switch result {
+                case .success(let name):
+                    self.username = name
+                case .failure(_):
+                    self.username = "Unknown Username"
+                }
+            }
+        }
     }
 }
+
+
 
 // MARK: - Reusable Button
 
