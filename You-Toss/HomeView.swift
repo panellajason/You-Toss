@@ -10,6 +10,8 @@ import FirebaseAuth
 
 struct HomeView: View {
 
+    @Binding var selectedTab: Int
+
     @StateObject private var authVM = AuthViewModel()
     @StateObject private var groupVM = GroupViewModel()
 
@@ -36,10 +38,30 @@ struct HomeView: View {
                         .font(.largeTitle)
                         .fontWeight(.bold)
                 } else {
-                    Text("No Group Selected")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.gray)
+                    VStack(spacing: 16) {
+                        Spacer()
+
+                        Text("You're not a part of any groups.")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(.gray)
+
+                        Button(action: {
+                            // Switch to Account tab
+                            selectedTab = 2
+                        }) {
+                            Text("Create or Join Group")
+                                .fontWeight(.semibold)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                        }
+                        .padding(.horizontal)
+
+                        Spacer()
+                    }
                 }
 
                 Spacer()
@@ -53,11 +75,6 @@ struct HomeView: View {
                 Text("Error: \(error)")
                     .foregroundColor(.red)
                     .multilineTextAlignment(.center)
-                    .padding()
-            } else if members.isEmpty {
-                Text("No members in this group")
-                    .foregroundColor(.gray)
-                    .font(.headline)
                     .padding()
             } else {
                 VStack(spacing: 12) {
@@ -107,12 +124,3 @@ struct HomeView: View {
         }
     }
 }
-
-// MARK: - Preview
-
-#Preview {
-    HomeView()
-}
-
-
-

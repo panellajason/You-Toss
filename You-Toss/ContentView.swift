@@ -8,19 +8,23 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var selectedTab = 0
+
     var body: some View {
-        TabView {
-            HomeView()
+        TabView(selection: $selectedTab) {
+            HomeView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "house.fill")
                     Text("Home")
                 }
+                .tag(0)
 
             SessionsView()
                 .tabItem {
                     Image(systemName: "play.circle")
                     Text("Session")
                 }
+                .tag(1)
 
             NavigationStack {
                 AccountView()
@@ -29,6 +33,7 @@ struct ContentView: View {
                 Image(systemName: "person.circle.fill")
                 Text("Account")
             }
+            .tag(2)
         }
     }
 }
