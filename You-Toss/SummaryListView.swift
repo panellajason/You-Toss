@@ -1,12 +1,3 @@
-//
-//  MyGroupsView.swift
-//  You-Toss
-//
-//  Created by Tony Hunt on 12/31/25.
-//
-
-import Foundation
-
 import SwiftUI
 
 struct SummaryItem: Identifiable {
@@ -18,7 +9,9 @@ struct SummaryItem: Identifiable {
 struct SummaryListView: View {
     let mode: Mode
 
-    let items: [SummaryItem] = []
+    @State private var items: [SummaryItem] = []
+    @StateObject private var groupVM = GroupViewModel()
+    // @StateObject private var sessionVM = SessionViewModel() // If implemented later
 
     enum Mode {
         case groups
@@ -27,9 +20,9 @@ struct SummaryListView: View {
         var title: String {
             switch self {
             case .groups:
-                "My Groups"
+                return "My Groups"
             case .sessions:
-                "My Sessions"
+                return "My Sessions"
             }
         }
     }
@@ -37,28 +30,41 @@ struct SummaryListView: View {
     var body: some View {
         Group {
             if items.isEmpty {
-                // Empty State
+                Text("No items to display")
+                    .foregroundColor(.gray)
+                    .padding()
             } else {
-                VStack(spacing: 16) {
-
-                    ForEach(items.sorted { $0.amount > $1.amount }) { item in
-                        AmountRow(name: item.name, amount: item.amount)
+                ScrollView {
+                    VStack(spacing: 16) {
+                        ForEach(items.sorted { $0.amount > $1.amount }) { item in
+                            AmountRow(name: item.name, amount: item.amount)
+                        }
                     }
-
-                    Spacer()
+                    .padding()
                 }
-                .padding()
-                .navigationTitle(mode.title)
             }
         }
-        .onAppear{
+        .navigationTitle(mode.title)
+        .onAppear {
             switch mode {
             case .groups:
-                // create here
-                print()
+                fetchGroups()
             case .sessions:
-                // create here
-                print()
+                // Placeholder for sessions
+                items = []
+            }
+        }
+    }
+
+    // MARK: - Fetch Groups
+    private func fetchGroups() {
+        groupVM.getAllGroupsForUser { result in
+            switch result {
+            case .success(let groups):
+                items = groups.map { SummaryItem(name: $0.groupName, amount: Double($0.score)) }
+            case .failure(let error):
+                items = []
+                print("Error fetching groups: \(error.localizedDescription)")
             }
         }
     }
