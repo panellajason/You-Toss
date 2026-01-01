@@ -13,6 +13,7 @@ struct AuthView: View {
         case signup
     }
 
+    @StateObject private var authVM = AuthViewModel()
     @State private var mode: Mode = .login
 
     @State private var username = ""
@@ -72,9 +73,10 @@ struct AuthView: View {
             // Primary button
             Button(action: {
                 if mode == .login {
-                    // Login logic later
+                    authVM.signIn(email: email, password: password)
+                    
                 } else {
-                    // Sign up logic later
+                    authVM.signUp(email: email, password: password)
                 }
             }) {
                 Text(mode == .login ? "Log In" : "Sign Up")

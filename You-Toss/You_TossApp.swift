@@ -10,14 +10,19 @@ import SwiftUI
 
 @main
 struct You_TossApp: App {
-    
+    @StateObject private var session = UserListener()
+
     init() {
         FirebaseApp.configure()
       }
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if session.user != nil {
+                ContentView()
+            } else {
+                AuthView()
+            }
         }
     }
 }
