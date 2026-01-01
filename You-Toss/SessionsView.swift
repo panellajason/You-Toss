@@ -13,6 +13,8 @@ struct SessionsView: View {
     @State private var showStartSession = false
     @State private var showEditBuyIn: Session.Player? = nil
 
+    @State private var showCashOut = false
+
     struct Session {
         struct Player: Identifiable {
             let id = UUID()
@@ -57,8 +59,7 @@ struct SessionsView: View {
                 }
 
                 Button(action: {
-                    // Cash out logic later
-                    activeSession = nil
+                    showCashOut = true
                 }) {
                     Text("Cash Out")
                         .fontWeight(.semibold)
@@ -69,6 +70,13 @@ struct SessionsView: View {
                         .cornerRadius(12)
                 }
                 .padding()
+                .sheet(isPresented: $showCashOut) {
+                    CashOutView(players: activeSession?.players ?? []) { updatedPlayers in
+                        // End session
+                        activeSession = nil
+                    }
+                }
+
             } else {
                 // No active session
                 Button(action: {

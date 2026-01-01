@@ -4,9 +4,11 @@
 //
 //  Created by Panella, Jason on 12/31/25.
 //
+
+import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
-import SwiftUICore
+//import SwiftUICore
 
 @MainActor
 class GroupViewModel: ObservableObject {
