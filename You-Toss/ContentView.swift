@@ -16,17 +16,19 @@ struct ContentView: View {
                     Text("Home")
                 }
 
-            SearchView()
+            SessionsView()
                 .tabItem {
                     Image(systemName: "play.circle")
                     Text("Session")
                 }
 
-            AccountView()
-                .tabItem {
-                    Image(systemName: "person.circle.fill")
-                    Text("Account")
-                }
+            NavigationStack {
+                AccountView()
+            }
+            .tabItem {
+                Image(systemName: "person.circle.fill")
+                Text("Account")
+            }
         }
     }
 }
