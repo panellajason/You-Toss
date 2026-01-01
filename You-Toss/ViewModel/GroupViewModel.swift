@@ -41,7 +41,7 @@ class GroupViewModel: ObservableObject {
             }
             
             // Update user's home_group
-            db.collection("users").document(uid).updateData(["home_group": groupDocRef.documentID]) { error in
+            db.collection("users").document(uid).updateData(["home_group": groupName]) { error in
                 if let error = error {
                     completion(.failure(error))
                     return
@@ -94,7 +94,7 @@ class GroupViewModel: ObservableObject {
             }
             
             // Update user's home_group
-            db.collection("users").document(uid).updateData(["home_group": document.documentID]) { error in
+            db.collection("users").document(uid).updateData(["home_group": groupName]) { error in
                 if let error = error {
                     completion(.failure(error))
                     return
@@ -123,8 +123,8 @@ class GroupViewModel: ObservableObject {
             completion(.failure(NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "No current user logged in"])))
             return
         }
-        
-        // First, fetch the username from Firestore
+
+        // Fetch the username first
         authVM.getCurrentUserUsername { result in
             switch result {
             case .success(let username):
@@ -137,7 +137,10 @@ class GroupViewModel: ObservableObject {
                     "username": username
                 ]
                 
-                db.collection("user_groups").document().setData(userGroupData) { error in
+                // Use a fixed document ID to avoid duplicates
+                let docID = "\(currentUser.uid)_\(groupID)"
+                
+                db.collection("user_groups").document(docID).setData(userGroupData) { error in
                     if let error = error {
                         completion(.failure(error))
                     } else {
@@ -150,6 +153,7 @@ class GroupViewModel: ObservableObject {
             }
         }
     }
+
 
     func updateUserGroupScore(
         groupName: String,
