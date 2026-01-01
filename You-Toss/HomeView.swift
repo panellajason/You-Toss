@@ -72,40 +72,13 @@ struct HomeView: View {
             // Members list
             VStack(spacing: 12) {
                 ForEach(selectedGroup.members.sorted { $0.amount > $1.amount }) { member in
-                    MemberRow(member: member)
+                    AmountRow(name: member.name, amount: member.amount)
                 }
             }
 
             Spacer()
         }
         .padding()
-    }
-}
-
-// MARK: - Member Row
-
-struct MemberRow: View {
-    let member: HomeView.Member
-
-    var body: some View {
-        HStack {
-            Text(member.name)
-                .font(.headline)
-
-            Spacer()
-
-            Text(formattedAmount(member.amount))
-                .fontWeight(.semibold)
-                .foregroundColor(member.amount >= 0 ? .green : .red)
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-    }
-
-    private func formattedAmount(_ amount: Double) -> String {
-        let sign = amount >= 0 ? "$" : "-$"
-        return "\(sign)\(String(format: "%.2f", abs(amount)))"
     }
 }
 

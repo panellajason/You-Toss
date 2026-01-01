@@ -14,6 +14,20 @@ struct AccountView: View {
     // Placeholder for now
     let email: String = "user@email.com"
 
+    // My Groups
+    let groups: [SummaryItem] = [
+        SummaryItem(name: "Trip to NYC", amount: 35.25),
+        SummaryItem(name: "Roommates", amount: -120.00),
+        SummaryItem(name: "Ski Weekend", amount: 82.40)
+    ]
+
+    // My Sessions
+    let sessions: [SummaryItem] = [
+        SummaryItem(name: "Dinner at Nobu", amount: -45.80),
+        SummaryItem(name: "Concert Tickets", amount: 120.00),
+        SummaryItem(name: "Weekend Airbnb", amount: -200.00)
+    ]
+
     var body: some View {
         VStack(spacing: 32) {
 
@@ -30,25 +44,35 @@ struct AccountView: View {
 
             // Main actions
             VStack(spacing: 16) {
-                AccountButton(
-                    title: "Create Group",
-                    systemImage: "plus.circle"
-                )
+                NavigationLink {
+                    GroupFormView(mode: .create)
+                } label: {
+                    AccountButton(
+                        title: "Create Group",
+                        systemImage: "plus.circle"
+                    )
+                }
 
-                AccountButton(
-                    title: "Join Group",
-                    systemImage: "person.2.badge.plus"
-                )
+                NavigationLink {
+                    GroupFormView(mode: .join)
+                } label: {
+                    AccountButton(
+                        title: "Join Group",
+                        systemImage: "person.2.badge.plus"
+                    )
+                }
 
-                AccountButton(
-                    title: "My Groups",
-                    systemImage: "person.3"
-                )
+                NavigationLink {
+                    SummaryListView(title: "My Groups", items: groups)
+                } label: {
+                    AccountButton(title: "My Groups", systemImage: "person.3")
+                }
 
-                AccountButton(
-                    title: "My Sessions",
-                    systemImage: "calendar"
-                )
+                NavigationLink {
+                    SummaryListView(title: "My Sessions", items: sessions)
+                } label: {
+                    AccountButton(title: "My Sessions", systemImage: "calendar")
+                }
             }
 
             // Sign out section
@@ -86,28 +110,27 @@ struct AccountButton: View {
     let systemImage: String
 
     var body: some View {
-        Button(action: {
-            // Action later
-        }) {
-            HStack {
-                Image(systemName: systemImage)
-                Text(title)
-                    .fontWeight(.medium)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.secondary)
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
+        HStack {
+            Image(systemName: systemImage)
+            Text(title)
+                .fontWeight(.medium)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .foregroundColor(.secondary)
         }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
         .foregroundColor(.primary)
     }
 }
 
+
 // MARK: - Preview
 
 #Preview {
-    AccountView()
+    NavigationStack {
+        AccountView()
+    }
 }
