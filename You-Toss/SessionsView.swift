@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SessionsView: View {
     @StateObject private var groupVM = GroupViewModel()
+    @StateObject private var sessionVM = SessionViewModel()
 
     @State private var currentGroup: String = ""
     @State private var activeSession: Session? = nil
@@ -163,5 +164,35 @@ struct SessionsView: View {
                 activeSession = nil
             }
         }
+        .onAppear {
+            sessionVM.getActiveSessionForCurrentUser { result in
+                switch result {
+                case .success(let data):
+                    guard
+                        let groupName = data["group_name"] as? String,
+                        let playersArray = data["players"] as? [[String: Any]]
+                    else { return }
+
+                    let players = playersArray.compactMap { dict -> SessionsView.Session.Player? in
+                        guard
+                            let username = dict["username"] as? String,
+                            let buyIn = dict["buyIn"] as? Double
+                        else { return nil }
+
+                        return SessionsView.Session.Player(name: username, buyIn: buyIn)
+                    }
+
+                    if !players.isEmpty {
+                        activeSession = SessionsView.Session(groupName: groupName, players: players)
+                        currentGroup = groupName
+                    }
+
+                case .failure:
+                    // No active session found, keep activeSession nil
+                    break
+                }
+            }
+        }
+
     }
 }
