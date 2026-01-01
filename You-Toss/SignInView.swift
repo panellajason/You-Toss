@@ -76,7 +76,7 @@ struct AuthView: View {
                     authVM.signIn(email: email, password: password)
                     
                 } else {
-                    authVM.signUp(email: email, password: password)
+                    authVM.signUp(email: email, password: password, username: username)
                 }
             }) {
                 Text(mode == .login ? "Log In" : "Sign Up")
