@@ -10,6 +10,8 @@ import FirebaseFirestore
 @MainActor
 class SessionViewModel: ObservableObject {
     
+    @StateObject private var authVM = AuthViewModel()
+
     func createSession(
         groupName: String,
         players: [[String: Any]] = [],
@@ -75,7 +77,7 @@ class SessionViewModel: ObservableObject {
     func updateUserBuyIn(
         groupName: String,
         username: String,
-        newBuyIn: Int,
+        newBuyIn: Double,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         let db = Firestore.firestore()
@@ -95,7 +97,7 @@ class SessionViewModel: ObservableObject {
                     return
                 }
                 
-                var sessionData = sessionDoc.data()
+                let sessionData = sessionDoc.data()
                 
                 // Step 2: Update the player's buy-in
                 var players = sessionData["players"] as? [[String: Any]] ?? []
@@ -125,7 +127,7 @@ class SessionViewModel: ObservableObject {
     func updateUserCashOut(
         groupName: String,
         username: String,
-        newCashOut: Int,
+        newCashOut: Double,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         let db = Firestore.firestore()
@@ -221,6 +223,37 @@ class SessionViewModel: ObservableObject {
             }
             
             completion(.success(players))
+        }
+    }
+
+    func getAllSessionsForCurrentUser(completion: @escaping (Result<[[String: Any]], Error>) -> Void) {
+        // First, get the current user's username
+        authVM.getCurrentUserUsername { result in
+            switch result {
+            case .success(let username):
+                let db = Firestore.firestore()
+                
+                // Query sessions where players array contains this username
+                db.collection("sessions")
+                    .whereField("players", arrayContains: ["username": username])
+                    .getDocuments { snapshot, error in
+                        if let error = error {
+                            completion(.failure(error))
+                            return
+                        }
+                        
+                        guard let documents = snapshot?.documents else {
+                            completion(.success([]))
+                            return
+                        }
+                        
+                        let sessionsData = documents.map { $0.data() }
+                        completion(.success(sessionsData))
+                    }
+                
+            case .failure(let error):
+                completion(.failure(error))
+            }
         }
     }
 
