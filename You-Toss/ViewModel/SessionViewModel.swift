@@ -135,13 +135,13 @@ class SessionViewModel: ObservableObject {
                 // Step 2: Update the player's buy-in
                 var players = sessionData["players"] as? [[String: Any]] ?? []
                 if let index = players.firstIndex(where: { ($0["username"] as? String) == username }) {
-                    players[index]["currentBuyIn"] = newBuyIn
+                    players[index]["buyIn"] = newBuyIn
                 } else {
                     // If player does not exist yet, optionally add them
                     players.append([
                         "username": username,
                         "cashOut": 0,
-                        "currentBuyIn": newBuyIn
+                        "buyIn": newBuyIn
                     ])
                 }
                 
@@ -191,7 +191,7 @@ class SessionViewModel: ObservableObject {
                     players.append([
                         "username": username,
                         "cashOut": newCashOut,
-                        "currentBuyIn": 0
+                        "buyIn": 0
                     ])
                 }
                 

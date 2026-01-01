@@ -146,6 +146,19 @@ struct SessionsView: View {
             EditBuyInView(player: player) { newAmount in
                 if let index = activeSession?.players.firstIndex(where: { $0.id == player.id }) {
                     activeSession?.players[index].buyIn = newAmount
+                    // Update Firestore
+                    sessionVM.updateUserBuyIn(
+                        groupName: activeSession!.groupName,
+                        username: player.name,
+                        newBuyIn: newAmount
+                    ) { result in
+                        switch result {
+                        case .success:
+                            print("Buy-in updated successfully in Firestore")
+                        case .failure(let error):
+                            print("Failed to update buy-in:", error.localizedDescription)
+                        }
+                    }
                 }
             }
         }
@@ -161,6 +174,7 @@ struct SessionsView: View {
         }
         .sheet(isPresented: $showCashOut) {
             CashOutView(players: activeSession?.players ?? []) { updatedPlayers in
+                
                 activeSession = nil
             }
         }
