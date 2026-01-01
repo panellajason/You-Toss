@@ -12,7 +12,7 @@ struct SessionsView: View {
     @State private var activeSession: Session? = nil
     @State private var showStartSession = false
     @State private var showEditBuyIn: Session.Player? = nil
-
+    @State private var showAddPlayers = false
     @State private var showCashOut = false
 
     struct Session {
@@ -21,7 +21,6 @@ struct SessionsView: View {
             var name: String
             var buyIn: Double
         }
-
         let groupName: String
         var players: [Player]
     }
@@ -34,7 +33,6 @@ struct SessionsView: View {
                 .padding()
 
             if let session = activeSession {
-                // Active session list
                 ScrollView {
                     VStack(spacing: 12) {
                         ForEach(session.players) { player in
@@ -58,27 +56,35 @@ struct SessionsView: View {
                     .padding()
                 }
 
-                Button(action: {
-                    showCashOut = true
-                }) {
-                    Text("Cash Out")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.red)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                }
-                .padding()
-                .sheet(isPresented: $showCashOut) {
-                    CashOutView(players: activeSession?.players ?? []) { updatedPlayers in
-                        // End session
-                        activeSession = nil
+                HStack(spacing: 12) {
+                    // Add Player button
+                    Button(action: {
+                        showAddPlayers = true
+                    }) {
+                        Text("Add Player")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.orange)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    }
+
+                    // Cash Out button
+                    Button(action: {
+                        showCashOut = true
+                    }) {
+                        Text("Cash Out")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.red)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
                     }
                 }
-
+                .padding()
             } else {
-                // No active session
                 Button(action: {
                     showStartSession = true
                 }) {
@@ -95,6 +101,7 @@ struct SessionsView: View {
 
             Spacer()
         }
+        // MARK: - Sheets
         .sheet(isPresented: $showStartSession) {
             StartSessionView(
                 groups: ["Trip to NYC", "Roommates", "Ski Weekend"],
@@ -116,6 +123,25 @@ struct SessionsView: View {
                 if let index = activeSession?.players.firstIndex(where: { $0.id == player.id }) {
                     activeSession?.players[index].buyIn = newAmount
                 }
+            }
+        }
+        .sheet(isPresented: $showAddPlayers) {
+            // Example: hardcoded group members
+            let groupMembers = ["Alex", "Sam", "Jordan", "Chris", "Taylor"] // replace with real data
+            let currentSessionNames = activeSession?.players.map { $0.name } ?? []
+
+            AddPlayersView(
+                allGroupPlayers: groupMembers.filter { !currentSessionNames.contains($0) }
+            ) { newPlayers in
+                let newSessionPlayers = newPlayers.map { Session.Player(name: $0, buyIn: 0) }
+                activeSession?.players.append(contentsOf: newSessionPlayers)
+            }
+        }
+        .sheet(isPresented: $showCashOut) {
+            CashOutView(players: activeSession?.players ?? []) { updatedPlayers in
+                // End session
+                activeSession = nil
+                // Optionally handle updatedPlayers
             }
         }
     }

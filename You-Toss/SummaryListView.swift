@@ -55,8 +55,10 @@ struct SummaryListView: View {
             switch mode {
             case .groups:
                 // create here
+                print()
             case .sessions:
                 // create here
+                print()
             }
         }
     }
