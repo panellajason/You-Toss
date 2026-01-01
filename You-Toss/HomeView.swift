@@ -20,23 +20,40 @@ struct HomeView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
 
+    // Dynamically loaded groups for dropdown
+    @State private var allUserGroups: [(groupID: String, groupName: String, score: Int)] = []
+
     struct Member: Identifiable, Hashable {
         let id = UUID()
         let name: String
         let score: Int
     }
 
-    // MARK: - View
-
     var body: some View {
         VStack(spacing: 24) {
 
-            // Header with group name
+            // Header with group name and dropdown
             HStack {
                 if !selectedGroupName.isEmpty {
                     Text(selectedGroupName)
                         .font(.largeTitle)
                         .fontWeight(.bold)
+
+                    // Menu to switch groups
+                    Menu {
+                        ForEach(allUserGroups, id: \.groupID) { group in
+                            Button(action: {
+                                switchToGroup(group.groupName)
+                            }) {
+                                Text(group.groupName)
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "chevron.down.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+
                 } else {
                     VStack(spacing: 16) {
                         Spacer()
@@ -76,6 +93,11 @@ struct HomeView: View {
                     .foregroundColor(.red)
                     .multilineTextAlignment(.center)
                     .padding()
+            } else if members.isEmpty {
+                Text("No members in this group")
+                    .foregroundColor(.gray)
+                    .font(.headline)
+                    .padding()
             } else {
                 VStack(spacing: 12) {
                     ForEach(members.sorted { $0.score > $1.score }) { member in
@@ -88,29 +110,33 @@ struct HomeView: View {
         }
         .padding()
         .onAppear {
-            loadCurrentUserGroup()
+            loadUserGroupsAndHomeGroup()
         }
     }
 
-    // MARK: - Load Data
-
-    private func loadCurrentUserGroup() {
+    // MARK: - Load user groups and home group
+    private func loadUserGroupsAndHomeGroup() {
         isLoading = true
         errorMessage = nil
 
+        // 1️⃣ Get the current home group
         authVM.getCurrentUserHomeGroup { result in
             switch result {
             case .success(let homeGroup):
                 selectedGroupName = homeGroup
 
-                // Fetch all users in this group
-                groupVM.getAllUsersInGroup(groupName: homeGroup) { usersResult in
-                    isLoading = false
-                    switch usersResult {
-                    case .success(let users):
-                        members = users.map { Member(name: $0.username, score: $0.score) }
+                // 2️⃣ Fetch all groups the user belongs to
+                groupVM.getAllGroupsForUser { groupsResult in
+                    switch groupsResult {
+                    case .success(let groups):
+                        allUserGroups = groups
+                        // 3️⃣ Load members for the current home group
+                        loadMembersForGroup(homeGroup)
+
                     case .failure(let error):
+                        isLoading = false
                         errorMessage = error.localizedDescription
+                        allUserGroups = []
                         members = []
                     }
                 }
@@ -119,7 +145,40 @@ struct HomeView: View {
                 isLoading = false
                 errorMessage = error.localizedDescription
                 selectedGroupName = ""
+                allUserGroups = []
                 members = []
+            }
+        }
+    }
+
+    // MARK: - Load members for a specific group
+    private func loadMembersForGroup(_ groupName: String) {
+        groupVM.getAllUsersInGroup(groupName: groupName) { usersResult in
+            isLoading = false
+            switch usersResult {
+            case .success(let users):
+                members = users.map { Member(name: $0.username, score: $0.score) }
+            case .failure(let error):
+                members = []
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    // MARK: - Switch to a new group
+    private func switchToGroup(_ newGroup: String) {
+        isLoading = true
+        errorMessage = nil
+
+        authVM.updateCurrentUserHomeGroup(to: newGroup) { result in
+            switch result {
+            case .success():
+                selectedGroupName = newGroup
+                loadMembersForGroup(newGroup)
+
+            case .failure(let error):
+                isLoading = false
+                errorMessage = "Failed to switch group: \(error.localizedDescription)"
             }
         }
     }
