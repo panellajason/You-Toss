@@ -182,9 +182,13 @@ class GroupViewModel: ObservableObject {
                     return
                 }
                 
+                // Get current score and append newScore
+                let currentScore = document.data()["score"] as? Int ?? 0
+                let updatedScore = currentScore + newScore
+                
                 // Update the score
                 db.collection("user_groups").document(document.documentID)
-                    .updateData(["score": newScore]) { error in
+                    .updateData(["score": updatedScore]) { error in
                         if let error = error {
                             completion(.failure(error))
                         } else {
@@ -193,7 +197,6 @@ class GroupViewModel: ObservableObject {
                     }
             }
     }
-
 
 
     func getAllGroupsForUser(
