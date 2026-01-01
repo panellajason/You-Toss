@@ -16,19 +16,48 @@ struct SummaryItem: Identifiable {
 }
 
 struct SummaryListView: View {
-    let title: String
-    let items: [SummaryItem]
+    let mode: Mode
+
+    let items: [SummaryItem] = []
+
+    enum Mode {
+        case groups
+        case sessions
+
+        var title: String {
+            switch self {
+            case .groups:
+                "My Groups"
+            case .sessions:
+                "My Sessions"
+            }
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 16) {
+        Group {
+            if items.isEmpty {
+                // Empty State
+            } else {
+                VStack(spacing: 16) {
 
-            ForEach(items.sorted { $0.amount > $1.amount }) { item in
-                AmountRow(name: item.name, amount: item.amount)
+                    ForEach(items.sorted { $0.amount > $1.amount }) { item in
+                        AmountRow(name: item.name, amount: item.amount)
+                    }
+
+                    Spacer()
+                }
+                .padding()
+                .navigationTitle(mode.title)
             }
-
-            Spacer()
         }
-        .padding()
-        .navigationTitle(title)
+        .onAppear{
+            switch mode {
+            case .groups:
+                // create here
+            case .sessions:
+                // create here
+            }
+        }
     }
 }

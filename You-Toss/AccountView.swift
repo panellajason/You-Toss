@@ -14,20 +14,6 @@ struct AccountView: View {
     // Placeholder for now
     let email: String = "user@email.com"
 
-    // My Groups
-    let groups: [SummaryItem] = [
-        SummaryItem(name: "Trip to NYC", amount: 35.25),
-        SummaryItem(name: "Roommates", amount: -120.00),
-        SummaryItem(name: "Ski Weekend", amount: 82.40)
-    ]
-
-    // My Sessions
-    let sessions: [SummaryItem] = [
-        SummaryItem(name: "Dinner at Nobu", amount: -45.80),
-        SummaryItem(name: "Concert Tickets", amount: 120.00),
-        SummaryItem(name: "Weekend Airbnb", amount: -200.00)
-    ]
-
     var body: some View {
         VStack(spacing: 32) {
 
@@ -63,13 +49,13 @@ struct AccountView: View {
                 }
 
                 NavigationLink {
-                    SummaryListView(title: "My Groups", items: groups)
+                    SummaryListView(mode: .groups)
                 } label: {
                     AccountButton(title: "My Groups", systemImage: "person.3")
                 }
 
                 NavigationLink {
-                    SummaryListView(title: "My Sessions", items: sessions)
+                    SummaryListView(mode: .sessions)
                 } label: {
                     AccountButton(title: "My Sessions", systemImage: "calendar")
                 }
