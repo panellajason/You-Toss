@@ -12,6 +12,8 @@ struct StartSessionView: View {
     var onStart: (String, [String: Double]) -> Void
 
     @Environment(\.dismiss) var dismiss
+
+    @StateObject private var sessionVM = SessionViewModel()
     @StateObject private var groupVM = GroupViewModel()
 
     @State private var selectedGroup: String = ""
@@ -105,8 +107,24 @@ struct StartSessionView: View {
                 // MARK: - Submit Button
                 Section {
                     Button("Start Session") {
-                        onStart(selectedGroup, selectedPlayers)
-                        dismiss()
+                        // 1️⃣ Map selectedPlayers dictionary to array of player dictionaries for Firestore
+                        let playersForFirestore: [[String: Any]] = selectedPlayers.map { name, buyIn in
+                            ["username": name, "buyIn": buyIn]
+                        }
+
+                        // 2️⃣ Call createSession API
+                        sessionVM.createSession(groupName: selectedGroup, players: playersForFirestore) { result in
+                            switch result {
+                            case .success(let sessionID):
+                                print("Session created with ID: \(sessionID)")
+                                // 3️⃣ Update parent view
+                                onStart(selectedGroup, selectedPlayers)
+                                // 4️⃣ Dismiss the sheet
+                                dismiss()
+                            case .failure(let error):
+                                print("Error creating session: \(error.localizedDescription)")
+                            }
+                        }
                     }
                     .disabled(selectedGroup.isEmpty || selectedPlayers.isEmpty)
                 }
