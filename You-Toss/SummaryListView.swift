@@ -11,7 +11,7 @@ struct SummaryListView: View {
 
     @State private var items: [SummaryItem] = []
     @StateObject private var groupVM = GroupViewModel()
-    // @StateObject private var sessionVM = SessionViewModel() // If implemented later
+    @StateObject private var sessionVM = SessionViewModel()
 
     enum Mode {
         case groups
@@ -50,8 +50,7 @@ struct SummaryListView: View {
             case .groups:
                 fetchGroups()
             case .sessions:
-                // Placeholder for sessions
-                items = []
+                fetchSessions()
             }
         }
     }
@@ -65,6 +64,38 @@ struct SummaryListView: View {
             case .failure(let error):
                 items = []
                 print("Error fetching groups: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    // MARK: - Fetch Sessions
+    private func fetchSessions() {
+        sessionVM.getAllSessionsForCurrentUser { result in
+            switch result {
+            case .success(let sessionsArray):
+                // Map each session dictionary to SummaryItem
+                items = sessionsArray.compactMap { sessionDict in
+                    guard let sessionName = sessionDict["session_name"] as? String,
+                          let players = sessionDict["players"] as? [[String: Any]] else {
+                        return nil
+                    }
+
+                    // Calculate total amount (sum of player buyIns)
+                    let totalAmount = players.reduce(0.0) { sum, playerDict in
+                        if let buyIn = playerDict["buyIn"] as? Double {
+                            return sum + buyIn
+                        } else if let buyInInt = playerDict["buyIn"] as? Int {
+                            return sum + Double(buyInInt)
+                        }
+                        return sum
+                    }
+
+                    return SummaryItem(name: sessionName, amount: totalAmount)
+                }
+
+            case .failure(let error):
+                items = []
+                print("Error fetching sessions: \(error.localizedDescription)")
             }
         }
     }

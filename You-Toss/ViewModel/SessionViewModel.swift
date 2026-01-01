@@ -4,13 +4,14 @@
 //
 //  Created by Panella, Jason on 12/31/25.
 //
+
+import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
 
 @MainActor
 class SessionViewModel: ObservableObject {
-    
-    @StateObject private var authVM = AuthViewModel()
+    private var authVM = AuthViewModel()
 
     func createSession(
         groupName: String,
