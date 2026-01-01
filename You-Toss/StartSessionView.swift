@@ -12,6 +12,7 @@ struct StartSessionView: View {
     var onStart: (String, [String: Double]) -> Void
 
     @Environment(\.dismiss) var dismiss
+    @StateObject private var groupVM = GroupViewModel()
 
     @State private var selectedGroup: String = ""
     @State private var allPlayers: [String] = []
@@ -30,18 +31,24 @@ struct StartSessionView: View {
                     }
                     .pickerStyle(.menu)
                     .onChange(of: selectedGroup) { newGroup in
-                        // Mock players per group
-                        switch newGroup {
-                        case "Trip to NYC":
-                            allPlayers = ["Alex", "Sam", "Jordan"]
-                        case "Roommates":
-                            allPlayers = ["Chris", "Taylor"]
-                        case "Ski Weekend":
-                            allPlayers = ["Morgan", "Jamie", "Riley"]
-                        default:
+                        guard !newGroup.isEmpty else {
                             allPlayers = []
+                            selectedPlayers.removeAll()
+                            return
                         }
-                        selectedPlayers.removeAll()
+
+                        // Fetch real players from Firestore
+                        groupVM.getAllUsersInGroup(groupName: newGroup) { result in
+                            switch result {
+                            case .success(let users):
+                                allPlayers = users.map { $0.username }
+                                selectedPlayers.removeAll()
+                            case .failure(let error):
+                                allPlayers = []
+                                selectedPlayers.removeAll()
+                                print("Error fetching group members: \(error.localizedDescription)")
+                            }
+                        }
                     }
                 }
 

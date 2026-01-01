@@ -8,12 +8,17 @@
 import SwiftUI
 
 struct SessionsView: View {
-    @State private var currentGroup: String = "Trip to NYC"
+    @StateObject private var groupVM = GroupViewModel()
+
+    @State private var currentGroup: String = ""
     @State private var activeSession: Session? = nil
     @State private var showStartSession = false
     @State private var showEditBuyIn: Session.Player? = nil
     @State private var showAddPlayers = false
     @State private var showCashOut = false
+
+    @State private var allUserGroups: [(groupID: String, groupName: String, score: Int)] = []
+    @State private var currentGroupMembers: [String] = []
 
     struct Session {
         struct Player: Identifiable {
@@ -27,7 +32,7 @@ struct SessionsView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Current Group: \(currentGroup)")
+            Text("Current Group: \(currentGroup.isEmpty ? "None" : currentGroup)")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .padding()
@@ -57,10 +62,7 @@ struct SessionsView: View {
                 }
 
                 HStack(spacing: 12) {
-                    // Add Player button
-                    Button(action: {
-                        showAddPlayers = true
-                    }) {
+                    Button(action: { showAddPlayers = true }) {
                         Text("Add Player")
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
@@ -70,10 +72,7 @@ struct SessionsView: View {
                             .cornerRadius(12)
                     }
 
-                    // Cash Out button
-                    Button(action: {
-                        showCashOut = true
-                    }) {
+                    Button(action: { showCashOut = true }) {
                         Text("Cash Out")
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
@@ -85,9 +84,7 @@ struct SessionsView: View {
                 }
                 .padding()
             } else {
-                Button(action: {
-                    showStartSession = true
-                }) {
+                Button(action: { showStartSession = true }) {
                     Text("Start a Session")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
@@ -101,22 +98,48 @@ struct SessionsView: View {
 
             Spacer()
         }
+        // MARK: - onChange: Fetch group members when currentGroup changes
+        .onChange(of: currentGroup) { newGroup in
+            guard !newGroup.isEmpty else { return }
+            groupVM.getAllUsersInGroup(groupName: newGroup) { result in
+                switch result {
+                case .success(let users):
+                    currentGroupMembers = users.map { $0.username }
+                case .failure(let error):
+                    currentGroupMembers = []
+                    print("Error fetching group members: \(error.localizedDescription)")
+                }
+            }
+            // Reset active session players
+//            activeSession = Session(groupName: newGroup, players: [])
+        }
         // MARK: - Sheets
-        .sheet(isPresented: $showStartSession) {
-            StartSessionView(
-                groups: ["Trip to NYC", "Roommates", "Ski Weekend"],
+        .sheet(isPresented: $showStartSession, onDismiss: { allUserGroups = [] }) {
+            // Fetch all groups first
+            groupVM.getAllGroupsForUser { result in
+                switch result {
+                case .success(let groups):
+                    allUserGroups = groups
+                case .failure(let error):
+                    allUserGroups = []
+                    print("Error fetching groups: \(error.localizedDescription)")
+                }
+            }
+
+            return StartSessionView(
+                groups: allUserGroups.map { $0.groupName },
                 onStart: { selectedGroup, selectedPlayers in
+                    currentGroup = selectedGroup
+                    // Map selectedPlayers dictionary to Session.Player array
                     activeSession = Session(
                         groupName: selectedGroup,
-                        players: selectedPlayers.keys.map { playerName in
-                            Session.Player(
-                                name: playerName,
-                                buyIn: selectedPlayers[playerName] ?? 0
-                            )
+                        players: selectedPlayers.map { name, buyIn in
+                            Session.Player(name: name, buyIn: buyIn)
                         }
                     )
                 }
             )
+
         }
         .sheet(item: $showEditBuyIn) { player in
             EditBuyInView(player: player) { newAmount in
@@ -126,12 +149,10 @@ struct SessionsView: View {
             }
         }
         .sheet(isPresented: $showAddPlayers) {
-            // Example: hardcoded group members
-            let groupMembers = ["Alex", "Sam", "Jordan", "Chris", "Taylor"] // replace with real data
+            // Only show players not already in the session
             let currentSessionNames = activeSession?.players.map { $0.name } ?? []
-
             AddPlayersView(
-                allGroupPlayers: groupMembers.filter { !currentSessionNames.contains($0) }
+                allGroupPlayers: currentGroupMembers.filter { !currentSessionNames.contains($0) }
             ) { newPlayers in
                 let newSessionPlayers = newPlayers.map { Session.Player(name: $0, buyIn: 0) }
                 activeSession?.players.append(contentsOf: newSessionPlayers)
@@ -139,9 +160,7 @@ struct SessionsView: View {
         }
         .sheet(isPresented: $showCashOut) {
             CashOutView(players: activeSession?.players ?? []) { updatedPlayers in
-                // End session
                 activeSession = nil
-                // Optionally handle updatedPlayers
             }
         }
     }
