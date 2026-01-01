@@ -12,6 +12,7 @@ import FirebaseFirestore
 @MainActor
 class SessionViewModel: ObservableObject {
     private var authVM = AuthViewModel()
+    private var groupVM = GroupViewModel()
 
     func createSession(
         groupName: String,
@@ -111,12 +112,34 @@ class SessionViewModel: ObservableObject {
                     .updateData(updateData) { error in
                         if let error = error {
                             completion(.failure(error))
-                        } else {
+                            return
+                        }
+                        
+                        // Update each player's score in user_groups
+                        let group = DispatchGroup()
+                        
+                        for player in players {
+                            guard
+                                let username = player["username"] as? String,
+                                let buyIn = player["buyIn"] as? Double,
+                                let cashOut = player["cashOut"] as? Double
+                            else { continue }
+                            
+                            let newScore = Int(cashOut - buyIn)
+                            
+                            group.enter()
+                            self.groupVM.updateUserGroupScore(groupName: groupName, username: username, newScore: newScore) { _ in
+                                group.leave()
+                            }
+                        }
+                        
+                        group.notify(queue: .main) {
                             completion(.success(()))
                         }
                     }
             }
     }
+
 
     
     func getActiveSessionForCurrentUser(completion: @escaping (Result<[String: Any], Error>) -> Void) {
