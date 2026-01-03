@@ -235,7 +235,7 @@ class GroupViewModel: ObservableObject {
 
     func getAllUsersInGroup(
         groupName: String,
-        completion: @escaping (Result<[(userID: String, username: String, score: Int)], Error>) -> Void
+        completion: @escaping (Result<[(userID: String, username: String, score: Double)], Error>) -> Void
     ) {
         let db = Firestore.firestore()
         
@@ -252,11 +252,11 @@ class GroupViewModel: ObservableObject {
                     return
                 }
                 
-                let users: [(userID: String, username: String, score: Int)] = documents.compactMap { doc in
+                let users: [(userID: String, username: String, score: Double)] = documents.compactMap { doc in
                     let data = doc.data()
                     guard let userID = data["user_id"] as? String,
                           let username = data["username"] as? String,
-                          let score = data["score"] as? Int else {
+                          let score = data["score"] as? Double else {
                         return nil
                     }
                     return (userID: userID, username: username, score: score)

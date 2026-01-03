@@ -26,7 +26,7 @@ struct HomeView: View {
     struct Member: Identifiable, Hashable {
         let id = UUID()
         let name: String
-        let score: Int
+        let score: Double
     }
 
     var body: some View {
