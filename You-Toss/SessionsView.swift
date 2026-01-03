@@ -16,7 +16,9 @@ struct SessionsView: View {
     @State private var showStartSession = false
     @State private var showEditBuyIn: Session.Player? = nil
     @State private var showAddPlayers = false
+    @State private var showBadBeats = false
     @State private var showCashOut = false
+    @State private var showUniqueHand = false
 
     @State private var allUserGroups: [(groupID: String, groupName: String, score: Int)] = []
     @State private var currentGroupMembers: [String] = []
@@ -63,6 +65,29 @@ struct SessionsView: View {
                     .padding()
                 }
 
+                HStack(spacing: 12) {
+                    Button(action: { showBadBeats = true }) {
+                        Text("Add Bad Beat")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.orange)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    }
+
+                    Button(action: { showUniqueHand = true }) {
+                        Text("Add Unique Hand")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.red)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    }
+                }
+                .padding()
+                
                 HStack(spacing: 12) {
                     Button(action: { showAddPlayers = true }) {
                         Text("Add Player")
@@ -112,8 +137,6 @@ struct SessionsView: View {
                     print("Error fetching group members: \(error.localizedDescription)")
                 }
             }
-            // Reset active session players
-//            activeSession = Session(groupName: newGroup, players: [])
         }
         // MARK: - Sheets
         .sheet(isPresented: $showStartSession, onDismiss: { allUserGroups = [] }) {
@@ -171,6 +194,23 @@ struct SessionsView: View {
             ) { newPlayers in
                 let newSessionPlayers = newPlayers.map { Session.Player(name: $0, buyIn: 0, cashOut: 0) }
                 activeSession?.players.append(contentsOf: newSessionPlayers)
+            }
+        }
+        .sheet(isPresented: $showBadBeats) {
+            groupVM.getAllGroupsForUser { result in
+                switch result {
+                case .success(let groups):
+                    allUserGroups = groups
+                case .failure(let error):
+                    allUserGroups = []
+                    print("Error fetching groups: \(error.localizedDescription)")
+                }
+            }
+            return AddBadBeats(
+                allGroupPlayers: currentGroupMembers,
+                groupName: activeSession?.groupName ?? "None"
+            ) { badBeat in
+                print("asq " + badBeat.winner)
             }
         }
         .sheet(isPresented: $showCashOut) {

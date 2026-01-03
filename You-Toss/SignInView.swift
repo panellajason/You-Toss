@@ -26,11 +26,10 @@ struct AuthView: View {
             Spacer()
 
             // Image / Logo
-            Image(systemName: "lock.shield.fill")
+            Image("AppLogo")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 80, height: 80)
-                .foregroundStyle(.blue)
 
             // Header
             Text(mode == .login ? "Welcome Back" : "Create Account")
