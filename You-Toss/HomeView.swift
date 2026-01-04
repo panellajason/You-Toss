@@ -21,7 +21,7 @@ struct HomeView: View {
     @State private var errorMessage: String?
 
     // Dynamically loaded groups for dropdown
-    @State private var allUserGroups: [(groupID: String, groupName: String, score: Int)] = []
+    @State private var allUserGroups: [(groupID: String, groupName: String, score: Double)] = []
 
     struct Member: Identifiable, Hashable {
         let id = UUID()

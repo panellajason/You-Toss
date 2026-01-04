@@ -20,7 +20,7 @@ struct SessionsView: View {
     @State private var showCashOut = false
     @State private var showUniqueHand = false
 
-    @State private var allUserGroups: [(groupID: String, groupName: String, score: Int)] = []
+    @State private var allUserGroups: [(groupID: String, groupName: String, score: Double)] = []
     @State private var currentGroupMembers: [String] = []
 
     struct Session {

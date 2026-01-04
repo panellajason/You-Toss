@@ -125,7 +125,7 @@ class SessionViewModel: ObservableObject {
                                 let cashOut = player["cashOut"] as? Double
                             else { continue }
                             
-                            let newScore = Int(cashOut - buyIn)
+                            let newScore = Double(cashOut - buyIn)
                             
                             group.enter()
                             self.groupVM.updateUserGroupScore(groupName: groupName, username: username, newScore: newScore) { _ in
@@ -247,7 +247,7 @@ class SessionViewModel: ObservableObject {
                     return
                 }
                 
-                var sessionData = sessionDoc.data()
+                let sessionData = sessionDoc.data()
                 
                 // Step 2: Update the player's cashOut
                 var players = sessionData["players"] as? [[String: Any]] ?? []

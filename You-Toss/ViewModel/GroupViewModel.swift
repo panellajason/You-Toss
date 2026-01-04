@@ -158,7 +158,7 @@ class GroupViewModel: ObservableObject {
     func updateUserGroupScore(
         groupName: String,
         username: String,
-        newScore: Int,
+        newScore: Double,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         let db = Firestore.firestore()
@@ -183,7 +183,7 @@ class GroupViewModel: ObservableObject {
                 }
                 
                 // Get current score and append newScore
-                let currentScore = document.data()["score"] as? Int ?? 0
+                let currentScore = document.data()["score"] as? Double ?? 0.0
                 let updatedScore = currentScore + newScore
                 
                 // Update the score
@@ -200,7 +200,7 @@ class GroupViewModel: ObservableObject {
 
 
     func getAllGroupsForUser(
-        completion: @escaping (Result<[(groupID: String, groupName: String, score: Int)], Error>) -> Void
+        completion: @escaping (Result<[(groupID: String, groupName: String, score: Double)], Error>) -> Void
     ) {
         guard let uid = Auth.auth().currentUser?.uid else {
             completion(.failure(NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "No current user logged in"])))
@@ -222,10 +222,10 @@ class GroupViewModel: ObservableObject {
                     return
                 }
                 
-                let groups: [(groupID: String, groupName: String, score: Int)] = documents.compactMap { doc in
+                let groups: [(groupID: String, groupName: String, score: Double)] = documents.compactMap { doc in
                     let data = doc.data()
                     guard let groupName = data["group_name"] as? String,
-                          let score = data["score"] as? Int else { return nil }
+                          let score = data["score"] as? Double else { return nil }
                     return (groupID: doc.documentID, groupName: groupName, score: score)
                 }
                 
