@@ -19,7 +19,7 @@ struct ContentView: View {
                 }
                 .tag(0)
 
-            SessionsView()
+            SessionsView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "play.circle")
                     Text("Session")

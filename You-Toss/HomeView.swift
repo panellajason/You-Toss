@@ -30,78 +30,80 @@ struct HomeView: View {
     }
 
     var body: some View {
-        VStack(spacing: 24) {
-
-            // Header with group name and dropdown
-            HStack {
-                if !selectedGroupName.isEmpty {
-                    Text(selectedGroupName)
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-
-                    // Menu to switch groups
-                    Menu {
-                        ForEach(allUserGroups, id: \.groupID) { group in
-                            Button(action: {
-                                switchToGroup(group.groupName)
-                            }) {
-                                Text(group.groupName)
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "chevron.down.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                    }
-
-                } else {
-                    VStack(spacing: 16) {
-                        Spacer()
-
-                        Text("You're not a part of any groups.")
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundColor(.gray)
-
-                        Button(action: {
-                            // Switch to Account tab
-                            selectedTab = 2
-                        }) {
-                            Text("Create or Join Group")
-                                .fontWeight(.semibold)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                        }
-                        .padding(.horizontal)
-
-                        Spacer()
-                    }
-                }
-
-                Spacer()
-            }
-
-            // Loading / Error / Members
+        VStack(spacing: 16) {
             if isLoading {
-                ProgressView("Loading...")
-                    .padding()
-            } else if let error = errorMessage {
-                Text("Error: \(error)")
-                    .foregroundColor(.red)
-                    .multilineTextAlignment(.center)
-                    .padding()
-            } else if members.isEmpty {
-                Text("No members in this group")
-                    .foregroundColor(.gray)
-                    .font(.headline)
-                    .padding()
+                VStack(spacing: 16) {
+                    Spacer()
+
+                    ProgressView("Loading...")
+                        .padding()
+
+                    Spacer()
+                }
             } else {
-                VStack(spacing: 12) {
-                    ForEach(members.sorted { $0.score > $1.score }) { member in
-                        AmountRow(name: member.name, amount: Double(member.score))
+                // Header with group name and dropdown
+                HStack {
+                    if !selectedGroupName.isEmpty {
+                        Text(selectedGroupName)
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+
+                        // Menu to switch groups
+                        Menu {
+                            ForEach(allUserGroups, id: \.groupID) { group in
+                                Button(action: {
+                                    switchToGroup(group.groupName)
+                                }) {
+                                    Text(group.groupName)
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "chevron.down.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                        }
+
+                    } else {
+                        VStack(spacing: 16) {
+                            Spacer()
+
+                            Text("You're not a part of any groups.")
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(.gray)
+
+                            Button(action: {
+                                // Switch to Account tab
+                                selectedTab = 2
+                            }) {
+                                Text("Create or Join Group")
+                                    .fontWeight(.semibold)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                            }
+                            .padding(.horizontal)
+
+                            Spacer()
+                        }
+                    }
+
+                    Spacer()
+                }
+                
+                // Error / Members
+                if let error = errorMessage {
+                    Text("Error: \(error)")
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                } else {
+                    VStack(spacing: 12) {
+                        ForEach(members.sorted { $0.score > $1.score }) { member in
+                            AmountRow(name: member.name, amount: Double(member.score))
+                        }
                     }
                 }
             }

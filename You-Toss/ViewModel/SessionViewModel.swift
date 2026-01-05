@@ -9,6 +9,15 @@ import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
 
+struct PlayerSession: Identifiable {
+    let id = UUID()
+    let sessionId: String
+    let date: String
+    let username: String
+    let buyIn: Double
+    let cashOut: Double
+}
+
 @MainActor
 class SessionViewModel: ObservableObject {
     private var authVM = AuthViewModel()
@@ -28,6 +37,7 @@ class SessionViewModel: ObservableObject {
         let createdAt = dateFormatter.string(from: Date())
         
         let sessionData: [String: Any] = [
+            "badBeats": [],
             "createdAt": createdAt,
             "group_name": groupName,
             "isActive": true,
@@ -223,15 +233,14 @@ class SessionViewModel: ObservableObject {
                     }
             }
     }
-
-    func updateUserCashOut(
+    
+    func addBadBeat(
         groupName: String,
-        username: String,
-        newCashOut: Double,
+        badBeat: BadBeat,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         let db = Firestore.firestore()
-        
+
         // Step 1: Get the active session
         db.collection("sessions")
             .whereField("group_name", isEqualTo: groupName)
@@ -241,29 +250,105 @@ class SessionViewModel: ObservableObject {
                     completion(.failure(error))
                     return
                 }
-                
+
                 guard let sessionDoc = snapshot?.documents.first else {
-                    completion(.failure(NSError(domain: "Firestore", code: 404, userInfo: [NSLocalizedDescriptionKey: "No active session found for this group"])))
+                    completion(.failure(
+                        NSError(
+                            domain: "Firestore",
+                            code: 404,
+                            userInfo: [NSLocalizedDescriptionKey: "No active session found for this group"]
+                        )
+                    ))
                     return
                 }
-                
+
                 let sessionData = sessionDoc.data()
-                
-                // Step 2: Update the player's cashOut
-                var players = sessionData["players"] as? [[String: Any]] ?? []
-                if let index = players.firstIndex(where: { ($0["username"] as? String) == username }) {
-                    players[index]["cashOut"] = newCashOut
-                } else {
-                    // If player does not exist yet, optionally add them
-                    players.append([
-                        "username": username,
-                        "cashOut": newCashOut,
-                        "buyIn": 0
-                    ])
+
+                // Step 2: Get existing badBeats array (or create it)
+                var badBeats = sessionData["badBeats"] as? [[String: Any]] ?? []
+
+                let badBeatDict: [String: Any] = [
+                    "loser": badBeat.loser,
+                    "loserHand": badBeat.loserHand,
+                    "street": badBeat.street,
+                    "winner": badBeat.winner,
+                    "winnerHand": badBeat.winnerHand
+                ]
+
+                badBeats.append(badBeatDict)
+
+                // Step 3: Save updated badBeats array back to Firestore
+                db.collection("sessions")
+                    .document(sessionDoc.documentID)
+                    .updateData(["badBeats": badBeats]) { error in
+                        if let error = error {
+                            completion(.failure(error))
+                        } else {
+                            completion(.success(()))
+                        }
+                    }
+            }
+    }
+
+    func addNewPlayers(
+        groupName: String,
+        newPlayers: [String],
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        let db = Firestore.firestore()
+
+        // Step 1: Get the active session
+        db.collection("sessions")
+            .whereField("group_name", isEqualTo: groupName)
+            .whereField("isActive", isEqualTo: true)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
                 }
-                
-                // Step 3: Save updated players array back to Firestore
-                db.collection("sessions").document(sessionDoc.documentID)
+
+                guard let sessionDoc = snapshot?.documents.first else {
+                    completion(.failure(
+                        NSError(
+                            domain: "Firestore",
+                            code: 404,
+                            userInfo: [NSLocalizedDescriptionKey: "No active session found for this group"]
+                        )
+                    ))
+                    return
+                }
+
+                let sessionData = sessionDoc.data()
+
+                // Step 2: Get existing players
+                var players = sessionData["players"] as? [[String: Any]] ?? []
+
+                let existingUsernames = Set(
+                    players.compactMap { $0["username"] as? String }
+                )
+
+                // Step 3: Build new players (no duplicates)
+                let playersToAdd: [[String: Any]] = newPlayers
+                    .filter { !existingUsernames.contains($0) }
+                    .map {
+                        [
+                            "username": $0,
+                            "buyIn": 0,
+                            "cashOut": 0
+                        ]
+                    }
+
+                // Nothing new to add
+                guard !playersToAdd.isEmpty else {
+                    completion(.success(()))
+                    return
+                }
+
+                // Step 4: Append + save
+                players.append(contentsOf: playersToAdd)
+
+                db.collection("sessions")
+                    .document(sessionDoc.documentID)
                     .updateData(["players": players]) { error in
                         if let error = error {
                             completion(.failure(error))
@@ -273,6 +358,7 @@ class SessionViewModel: ObservableObject {
                     }
             }
     }
+
 
     func getAllSessionsForGroup(
         groupName: String,
@@ -326,36 +412,67 @@ class SessionViewModel: ObservableObject {
         }
     }
 
-    func getAllSessionsForCurrentUser(completion: @escaping (Result<[[String: Any]], Error>) -> Void) {
-        // First, get the current user's username
+    func getPlayerSessions(completion: @escaping (Result<[PlayerSession], Error>) -> Void) {
+        let db = Firestore.firestore()
+
+        // Step 1: Get current user's username
         authVM.getCurrentUserUsername { result in
             switch result {
+            case .failure(let error):
+                completion(.failure(error))
+
             case .success(let username):
-                let db = Firestore.firestore()
-                
-                // Query sessions where players array contains this username
+                // Step 2: Fetch all sessions
                 db.collection("sessions")
-                    .whereField("players", arrayContains: ["username": username])
                     .getDocuments { snapshot, error in
                         if let error = error {
                             completion(.failure(error))
                             return
                         }
-                        
+
                         guard let documents = snapshot?.documents else {
                             completion(.success([]))
                             return
                         }
-                        
-                        let sessionsData = documents.map { $0.data() }
-                        completion(.success(sessionsData))
+
+                        var playerSessions: [PlayerSession] = []
+
+                        // Step 3: Filter sessions for this user
+                        for document in documents {
+                            let data = document.data()
+                            let sessionId = document.documentID   // ✅ capture ID
+
+                            let date = data["createdAt"] as? String ?? "Unknown"
+                            let players = data["players"] as? [[String: Any]] ?? []
+
+                            for player in players {
+                                guard
+                                    let playerUsername = player["username"] as? String,
+                                    playerUsername == username,
+                                    let buyIn = player["buyIn"] as? Double,
+                                    let cashOut = player["cashOut"] as? Double
+                                else {
+                                    continue
+                                }
+
+                                let session = PlayerSession(
+                                    sessionId: sessionId,
+                                    date: date,
+                                    username: playerUsername,
+                                    buyIn: buyIn,
+                                    cashOut: cashOut
+                                )
+
+                                playerSessions.append(session)
+                            }
+                        }
+
+                        completion(.success(playerSessions))
                     }
-                
-            case .failure(let error):
-                completion(.failure(error))
             }
         }
     }
+
 
 
 }

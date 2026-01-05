@@ -60,7 +60,7 @@ struct AccountView: View {
                 }
 
                 NavigationLink {
-                    SummaryListView(mode: .sessions)
+                    MySessionsView()
                 } label: {
                     AccountButton(title: "My Sessions", systemImage: "calendar")
                 }

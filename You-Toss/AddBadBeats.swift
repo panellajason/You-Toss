@@ -14,11 +14,15 @@ struct AddBadBeats: View {
 
     @Environment(\.dismiss) var dismiss
 
-    @State private var selectedWinner = ""
-    @State private var selectedHand = ""
     @State private var selectedLoser = ""
+    @State private var selectedLoserHand = ""
+    @State private var selectedStreet = ""
+    @State private var selectedWinner = ""
+    @State private var selectedWinnerHand = ""
 
-    private let hands = ["Triples", "Straight", "Full House"]
+    private let hands = ["Two Pair", "Trips", "Straight", "Flush", "Full House", "Quads", "Straight Flush", "Royal Flush"]
+    private let streets = ["Flop", "Turn", "River"]
+
 
     var body: some View {
         NavigationStack {
@@ -34,8 +38,8 @@ struct AddBadBeats: View {
                     .pickerStyle(.menu)
                 }
 
-                Section("Select Hand") {
-                    Picker("Hand", selection: $selectedHand) {
+                Section("Select Winner's Hand") {
+                    Picker("Hand", selection: $selectedWinnerHand) {
                         Text("Select a Hand").tag("")
                         ForEach(hands, id: \.self) {
                             Text($0).tag($0)
@@ -53,13 +57,36 @@ struct AddBadBeats: View {
                     }
                     .pickerStyle(.menu)
                 }
+                
+                Section("Select Loser's Hand") {
+                    Picker("Hand", selection: $selectedLoserHand) {
+                        Text("Select a Hand").tag("")
+                        ForEach(hands, id: \.self) {
+                            Text($0).tag($0)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
 
+                Section("Select Street") {
+                    Picker("Hand", selection: $selectedStreet) {
+                        Text("Select Street").tag("")
+                        ForEach(streets, id: \.self) {
+                            Text($0).tag($0)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+
+                
                 Section {
                     Button("Add Bad Beat") {
                         let badBeat = BadBeat(
+                            loser: selectedLoser,
+                            loserHand: selectedLoserHand,
+                            street: selectedStreet,
                             winner: selectedWinner,
-                            hand: selectedHand,
-                            loser: selectedLoser
+                            winnerHand: selectedWinnerHand
                         )
                         onAddBadBeat(badBeat)
                         dismiss()
@@ -72,23 +99,29 @@ struct AddBadBeats: View {
     }
 
     private var isFormValid: Bool {
-        !selectedWinner.isEmpty &&
-        !selectedHand.isEmpty &&
         !selectedLoser.isEmpty &&
+        !selectedLoserHand.isEmpty &&
+        !selectedStreet.isEmpty &&
+        !selectedWinner.isEmpty &&
+        !selectedWinnerHand.isEmpty &&
         selectedWinner != selectedLoser
     }
 }
 
 struct BadBeat {
-    let winner: String
-    let hand: String
     let loser: String
+    let loserHand: String
+    let street: String
+    let winner: String
+    let winnerHand: String
 
     func toDictionary() -> [String: String] {
         [
+            "loser": loser,
+            "loserHand": loserHand,
+            "street": street,
             "winner": winner,
-            "hand": hand,
-            "loser": loser
+            "winnerHand": winnerHand
         ]
     }
 }
