@@ -114,7 +114,7 @@ struct SessionsView: View {
                         Text("Total Buy-Ins: $\(String(format: "%.2f", totalBuyIns))")
                             .font(.headline)
                             .fontWeight(.bold)
-                            .foregroundColor(.black)
+                            .foregroundColor(.primary)
                             .padding(.horizontal)
                             .padding(.top, 8)
 

@@ -62,7 +62,7 @@ struct CashOutView: View {
             VStack(spacing: 4) {
                 Text("Total Buy-Ins: $\(String(format: "%.2f", totalBuyIns))")
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .foregroundColor(.primary)
                 
                 Text("Total Cash Out: $\(String(format: "%.2f", totalCashOut))")
                     .font(.headline)
