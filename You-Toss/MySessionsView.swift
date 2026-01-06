@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct MySession: Identifiable {
+struct SessionItems: Identifiable {
     let id = UUID()
     let date: String
     let amount: Double
@@ -8,14 +8,22 @@ struct MySession: Identifiable {
 }
 
 struct MySessionsView: View {
-
-    @State private var items: [MySession] = []
     @StateObject private var sessionVM = SessionViewModel()
+
+    @State private var items: [SessionItems] = []
+    @State private var loading = true
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                if items.isEmpty {
+            Group {
+                if loading {
+                    VStack {
+                        Spacer()
+                        ProgressView("Loading My Sessions...")
+                            .padding()
+                        Spacer()
+                    }
+                } else if items.isEmpty {
                     Text("No items to display")
                         .foregroundColor(.gray)
                         .padding()
@@ -44,21 +52,20 @@ struct MySessionsView: View {
     // MARK: - Fetch Sessions
     private func fetchSessions() {
         sessionVM.getPlayerSessions { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let sessions):
-                    items = sessions.compactMap { session in
-                        MySession(
-                            date: session.date,
-                            amount: session.cashOut - session.buyIn,
-                            sessionId: session.sessionId
-                        )
-                    }
-
-                case .failure(let error):
-                    items = []
-                    print("Error fetching sessions: \(error.localizedDescription)")
+            loading = false
+            switch result {
+            case .success(let sessions):
+                items = sessions.compactMap { session in
+                    SessionItems(
+                        date: session.date,
+                        amount: session.cashOut - session.buyIn,
+                        sessionId: session.sessionId
+                    )
                 }
+
+            case .failure(let error):
+                items = []
+                print("Error fetching sessions: \(error.localizedDescription)")
             }
         }
     }

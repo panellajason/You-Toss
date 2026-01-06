@@ -11,10 +11,12 @@ import FirebaseFirestore
 class AuthViewModel: ObservableObject {
     @Published var user: User?
     @Published var errorMessage: String?
+    @Published var showErrorAlert = false
 
-    func signIn(email: String, password: String) {
+    func signIn(email: String, password: String, completion: @escaping (Bool) -> Void) {
         Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
             if let error = error {
+                self?.showErrorAlert = true
                 self?.errorMessage = error.localizedDescription
                 return
             }
@@ -23,9 +25,10 @@ class AuthViewModel: ObservableObject {
         }
     }
 
-    func signUp(email: String, password: String, username: String) {
+    func signUp(email: String, password: String, username: String,  completion: @escaping (Bool) -> Void) {
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
             if let error = error {
+                self?.showErrorAlert = true
                 self?.errorMessage = error.localizedDescription
                 return
             }
@@ -145,4 +148,25 @@ class AuthViewModel: ObservableObject {
         }
     }
 
+    func checkIfUsernameExists(
+        username: String,
+        completion: @escaping (Bool) -> Void
+    ) {
+        let db = Firestore.firestore()
+
+        db.collection("users")
+            .whereField("username", isEqualTo: username.lowercased())
+            .limit(to: 1)
+            .getDocuments { snapshot, error in
+
+                if let error = error {
+                    print("Error checking username: \(error.localizedDescription)")
+                    completion(false)
+                    return
+                }
+
+                // If we found at least one document, the username exists
+                completion(!(snapshot?.documents.isEmpty ?? true))
+            }
+    }
 }

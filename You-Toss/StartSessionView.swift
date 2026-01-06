@@ -16,6 +16,7 @@ struct StartSessionView: View {
     @StateObject private var sessionVM = SessionViewModel()
     @StateObject private var groupVM = GroupViewModel()
 
+    @State private var loading = false
     @State private var selectedGroup: String = ""
     @State private var allPlayers: [String] = []
     @State private var selectedPlayers: [String: Double] = [:] // name → buy-in
@@ -106,30 +107,53 @@ struct StartSessionView: View {
 
                 // MARK: - Submit Button
                 Section {
-                    Button("Start Session") {
-                        // 1️⃣ Map selectedPlayers dictionary to array of player dictionaries for Firestore
-                        let playersForFirestore: [[String: Any]] = selectedPlayers.map { name, buyIn in
-                            ["username": name, "buyIn": buyIn, "cashOut": 0]
-                        }
-
-                        // 2️⃣ Call createSession API
-                        sessionVM.createSession(groupName: selectedGroup, players: playersForFirestore) { result in
-                            switch result {
-                            case .success(let sessionID):
-                                print("Session created with ID: \(sessionID)")
-                                // 3️⃣ Update parent view
-                                onStart(selectedGroup, selectedPlayers)
-                                // 4️⃣ Dismiss the sheet
-                                dismiss()
-                            case .failure(let error):
-                                print("Error creating session: \(error.localizedDescription)")
+                    if !selectedGroup.isEmpty && !selectedPlayers.isEmpty {
+                        Button(action: { handleStartSession() }) {
+                            if loading {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12).padding()
+                            } else {
+                                Text("Start Session")
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
                             }
                         }
                     }
-                    .disabled(selectedGroup.isEmpty || selectedPlayers.isEmpty)
                 }
+
             }
             .navigationTitle("Start Session")
+        }
+    }
+    
+    func handleStartSession() {
+        // 1️⃣ Map selectedPlayers dictionary to array of player dictionaries for Firestore
+        let playersForFirestore: [[String: Any]] = selectedPlayers.map { name, buyIn in
+            ["username": name, "buyIn": buyIn, "cashOut": 0]
+        }
+
+        // 2️⃣ Call createSession API
+        loading = true
+        sessionVM.createSession(groupName: selectedGroup, players: playersForFirestore) { result in
+            loading = false
+            switch result {
+            case .success(let sessionID):
+                print("Session created with ID: \(sessionID)")
+                // 3️⃣ Update parent view
+                onStart(selectedGroup, selectedPlayers)
+                // 4️⃣ Dismiss the sheet
+                dismiss()
+            case .failure(let error):
+                print("Error creating session: \(error.localizedDescription)")
+            }
         }
     }
 }

@@ -22,7 +22,9 @@ struct GroupFormView: View {
     @State private var groupName = ""
     @State private var passcode = ""
     @State private var isLoading = false
-    @State private var alertMessage: String?
+    @State private var alertMessage = ""
+    @State private var showAlert = false
+    
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -74,6 +76,11 @@ struct GroupFormView: View {
             Spacer()
         }
         .padding()
+        .alert("Something went wrong", isPresented: $showAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(alertMessage)
+        }
     }
 
     // MARK: - Button Logic
@@ -81,37 +88,58 @@ struct GroupFormView: View {
     private func handleButtonTap() {
         guard !groupName.isEmpty else {
             alertMessage = "Please enter a group name."
+            showAlert = true
             return
         }
         guard !passcode.isEmpty else {
-            alertMessage = mode == .create ? "Please enter a password." : "Please enter the group passcode."
+            alertMessage = mode == .create ? "Please enter a passcode." : "Please enter the group passcode."
+            showAlert = true
             return
         }
 
         isLoading = true
 
         if mode == .create {
-            groupVM.createGroup(groupName: groupName, groupPasscode: passcode) { result in
+            guard passcode.count > 6 else {
+                alertMessage = "Group passcode must be at least 6 characters long."
+                showAlert = true
                 isLoading = false
-                switch result {
-                case .success(let groupID):
-                    // Optional: createUserGroup entry for this user
-                    groupVM.createUserGroup(groupID: groupID, groupName: groupName) { _ in }
-                    alertMessage = "Group created successfully!"
-                    dismiss()
-                case .failure(let error):
-                    alertMessage = "Failed to create group: \(error.localizedDescription)"
+                return
+            }
+            groupVM.checkIfGroupNameExists(groupName: groupName) { exists in
+                if exists {
+                    alertMessage = "Group name already exists"
+                    showAlert = true
+                    isLoading = false
+                } else {
+                    groupVM.createGroup(groupName: groupName, groupPasscode: passcode) { result in
+                        isLoading = false
+                        switch result {
+                        case .success(let groupID):
+                            dismiss()
+                        case .failure(let error):
+                            alertMessage = "Failed to create group: \(error.localizedDescription)"
+                            showAlert = true
+                        }
+                    }
                 }
             }
         } else {
-            groupVM.joinGroup(groupName: groupName, groupPasscode: passcode) { result in
-                isLoading = false
-                switch result {
-                case .success:
-                    alertMessage = "Joined group successfully!"
-                    dismiss()
-                case .failure(let error):
-                    alertMessage = "Failed to join group: \(error.localizedDescription)"
+            groupVM.checkIfUserIsInGroup(groupName: groupName) { isInGroup in
+                if isInGroup {
+                    alertMessage = "You are already in this group."
+                    showAlert = true
+                } else {
+                    groupVM.joinGroup(groupName: groupName, groupPasscode: passcode) { result in
+                        isLoading = false
+                        switch result {
+                        case .success:
+                            dismiss()
+                        case .failure(let error):
+                            alertMessage = "Failed to join group: \(error.localizedDescription)"
+                            showAlert = true
+                        }
+                    }
                 }
             }
         }

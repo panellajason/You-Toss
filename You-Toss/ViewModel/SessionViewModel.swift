@@ -18,6 +18,14 @@ struct PlayerSession: Identifiable {
     let cashOut: Double
 }
 
+struct PlayerSessionDetail: Identifiable {
+    let id = UUID()
+    let name: String
+    let buyIn: Double
+    let cashOut: Double
+    var net: Double { cashOut - buyIn }
+}
+
 @MainActor
 class SessionViewModel: ObservableObject {
     private var authVM = AuthViewModel()
@@ -473,6 +481,44 @@ class SessionViewModel: ObservableObject {
         }
     }
 
+    func fetchSession(
+            sessionId: String,
+            completion: @escaping (Result<[PlayerSessionDetail], Error>) -> Void
+        ) {
+            let db = Firestore.firestore()
+            db.collection("sessions")
+                .document(sessionId)
+                .getDocument { snapshot, error in
+                    if let error = error {
+                        completion(.failure(error))
+                        return
+                    }
 
+                    guard
+                        let data = snapshot?.data(),
+                        let playersData = data["players"] as? [[String: Any]]
+                    else {
+                        completion(.success([]))
+                        return
+                    }
 
+                    let players: [PlayerSessionDetail] = playersData.compactMap { playerDict in
+                        guard
+                            let username = playerDict["username"] as? String,
+                            let buyIn = playerDict["buyIn"] as? Double,
+                            let cashOut = playerDict["cashOut"] as? Double
+                        else {
+                            return nil
+                        }
+
+                        return PlayerSessionDetail(
+                            name: username,
+                            buyIn: buyIn,
+                            cashOut: cashOut
+                        )
+                    }
+
+                    completion(.success(players))
+                }
+        }
 }

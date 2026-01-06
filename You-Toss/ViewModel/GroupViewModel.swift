@@ -266,5 +266,57 @@ class GroupViewModel: ObservableObject {
             }
     }
 
+    func checkIfGroupNameExists(
+        groupName: String,
+        completion: @escaping (Bool) -> Void
+    ) {
+        let db = Firestore.firestore()
+
+        db.collection("groups")
+            .whereField("group_name", isEqualTo: groupName.lowercased())
+            .limit(to: 1)
+            .getDocuments { snapshot, error in
+
+                if let error = error {
+                    print("Error checking group name: \(error.localizedDescription)")
+                    completion(false)
+                    return
+                }
+
+                // If at least one doc exists, the group name is taken
+                completion(!(snapshot?.documents.isEmpty ?? true))
+            }
+    }
     
+    func checkIfUserIsInGroup(
+        groupName: String,
+        completion: @escaping (Bool) -> Void
+    ) {
+        authVM.getCurrentUserUsername { result in
+            switch result {
+            case .success(let username):
+                let db = Firestore.firestore()
+
+                db.collection("user_groups")
+                    .whereField("username", isEqualTo: username)
+                    .whereField("group_name", isEqualTo: groupName)
+                    .limit(to: 1)
+                    .getDocuments { snapshot, error in
+
+                        if let error = error {
+                            print("Error checking if you are in group: \(error.localizedDescription)")
+                            completion(false)
+                            return
+                        }
+
+                        // If at least one doc exists, the user is already in the group
+                        completion(!(snapshot?.documents.isEmpty ?? false))
+                    }
+                
+            case .failure(_):
+                completion(false)
+            }
+        }
+    }
+
 }

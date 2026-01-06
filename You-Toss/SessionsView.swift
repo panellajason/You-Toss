@@ -28,6 +28,10 @@ struct SessionsView: View {
 
     @State private var allUserGroups: [(groupID: String, groupName: String, score: Double)] = []
     @State private var currentGroupMembers: [String] = []
+    
+    private var totalBuyIns: Double {
+        activeSession?.players.reduce(0) { $0 + $1.buyIn } ?? 0
+    }
 
     struct Session {
         struct Player: Identifiable {
@@ -42,15 +46,13 @@ struct SessionsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack {
             
             if (loading) {
                 VStack(spacing: 16) {
                     Spacer()
-
                     ProgressView("Loading...")
                         .padding()
-
                     Spacer()
                 }
             } else {
@@ -108,6 +110,13 @@ struct SessionsView: View {
                             }
                             .padding()
                         }
+                        
+                        Text("Total Buy-Ins: $\(String(format: "%.2f", totalBuyIns))")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.black)
+                            .padding(.horizontal)
+                            .padding(.top, 8)
 
                         HStack(spacing: 12) {
                             Button(action: { showBadBeats = true }) {
@@ -125,20 +134,20 @@ struct SessionsView: View {
                                     .fontWeight(.semibold)
                                     .frame(maxWidth: .infinity)
                                     .padding()
-                                    .background(Color.red)
+                                    .background(Color.orange)
                                     .foregroundColor(.white)
                                     .cornerRadius(12)
                             }
                         }
-                        .padding()
-                        
+                        .padding([.top, .leading, .trailing])
+
                         HStack(spacing: 12) {
                             Button(action: { showAddPlayers = true }) {
                                 Text("Add Player")
                                     .fontWeight(.semibold)
                                     .frame(maxWidth: .infinity)
                                     .padding()
-                                    .background(Color.orange)
+                                    .background(Color.blue)
                                     .foregroundColor(.white)
                                     .cornerRadius(12)
                             }
@@ -148,7 +157,7 @@ struct SessionsView: View {
                                     .fontWeight(.semibold)
                                     .frame(maxWidth: .infinity)
                                     .padding()
-                                    .background(Color.red)
+                                    .background(Color.green)
                                     .foregroundColor(.white)
                                     .cornerRadius(12)
                             }
@@ -267,39 +276,11 @@ struct SessionsView: View {
                 allGroupPlayers: currentSessionNames,
                 groupName: activeSession?.groupName ?? "None"
             ) { badBeat in
-                guard let groupName = activeSession?.groupName else { return }
-                sessionVM.addBadBeat(groupName: groupName, badBeat: badBeat) { result in
-                    switch result {
-                    case .success:
-                        print("Added bad beat")
-                    case .failure(let error):
-                        print("Failed to add bad beat:", error.localizedDescription)
-                    }
-                }
+                
             }
         }
         .sheet(isPresented: $showCashOut) {
-            CashOutView(players: activeSession?.players ?? []) { updatedPlayers in
-                guard let groupName = activeSession?.groupName else { return }
-
-                // Prepare players data for Firestore
-                let playersData: [[String: Any]] = updatedPlayers.map { player in
-                    [
-                        "username": player.name,
-                        "buyIn": player.buyIn,
-                        "cashOut": player.cashOut
-                    ]
-                }
-
-                // End session and update players in Firestore
-                sessionVM.endSessionWithPlayerData(groupName: groupName, players: playersData) { result in
-                    switch result {
-                    case .success:
-                        print("Session ended and players updated successfully")
-                    case .failure(let error):
-                        print("Failed to end session:", error.localizedDescription)
-                    }
-                }
+            CashOutView(groupName: activeSession?.groupName ?? "", players: activeSession?.players ?? []) { _ in
                 activeSession = nil
             }
         }

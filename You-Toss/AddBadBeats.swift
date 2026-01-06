@@ -7,6 +7,8 @@
 import SwiftUI
 
 struct AddBadBeats: View {
+    @StateObject private var sessionVM = SessionViewModel()
+
     let allGroupPlayers: [String]
     let groupName: String
 
@@ -19,15 +21,23 @@ struct AddBadBeats: View {
     @State private var selectedStreet = ""
     @State private var selectedWinner = ""
     @State private var selectedWinnerHand = ""
+    
+    @State private var loading = false
+    @State private var showAlert = false
+    @State private var alertMessage = ""
 
     private let hands = ["Two Pair", "Trips", "Straight", "Flush", "Full House", "Quads", "Straight Flush", "Royal Flush"]
     private let streets = ["Flop", "Turn", "River"]
 
 
     var body: some View {
-        NavigationStack {
-            Form {
+        VStack {
+            Text("Add Bad Beat")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding()
 
+            Form {
                 Section("Select Winner") {
                     Picker("Winner", selection: $selectedWinner) {
                         Text("Select a Player").tag("")
@@ -78,23 +88,76 @@ struct AddBadBeats: View {
                     .pickerStyle(.menu)
                 }
 
-                
-                Section {
-                    Button("Add Bad Beat") {
-                        let badBeat = BadBeat(
-                            loser: selectedLoser,
-                            loserHand: selectedLoserHand,
-                            street: selectedStreet,
-                            winner: selectedWinner,
-                            winnerHand: selectedWinnerHand
-                        )
-                        onAddBadBeat(badBeat)
-                        dismiss()
+                if isFormValid {
+                    Section {
+                        Button(action: {
+                            handleAddBadBeat()
+                        }) {
+                            if loading {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                            } else {
+                                Text("Add Bad Beat")
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                            }
+                            
+                        }
                     }
-                    .disabled(!isFormValid)
                 }
             }
-            .navigationTitle("Add Bad Beat")
+            .onChange(of: selectedWinner) { newWinner in
+                checkWinnerLoserConflict()
+            }
+            .onChange(of: selectedLoser) { newLoser in
+                checkWinnerLoserConflict()
+            }
+            .alert("", isPresented: $showAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(alertMessage)
+            }
+        }
+    }
+    
+    func handleAddBadBeat() {
+        let badBeat = BadBeat(
+            loser: selectedLoser,
+            loserHand: selectedLoserHand,
+            street: selectedStreet,
+            winner: selectedWinner,
+            winnerHand: selectedWinnerHand
+        )
+        
+        loading = true
+        sessionVM.addBadBeat(groupName: groupName, badBeat: badBeat) { result in
+            loading = false
+            switch result {
+            case .success:
+                print("Added bad beat")
+                onAddBadBeat(badBeat)
+                dismiss()
+            case .failure(let error):
+                alertMessage = "Failed to add bad beat: " + error.localizedDescription
+                showAlert = true
+            }
+        }
+    }
+    
+    func checkWinnerLoserConflict() {
+        guard !selectedWinner.isEmpty && !selectedLoser.isEmpty else { return }
+        
+        if selectedWinner == selectedLoser {
+            alertMessage = "Winner and loser cannot be the same player."
+            showAlert = true
         }
     }
 
