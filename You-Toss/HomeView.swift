@@ -100,9 +100,11 @@ struct HomeView: View {
                         .multilineTextAlignment(.center)
                         .padding()
                 } else {
-                    VStack(spacing: 12) {
-                        ForEach(members.sorted { $0.score > $1.score }) { member in
-                            AmountRow(name: member.name, amount: Double(member.score))
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(members.sorted { $0.score > $1.score }) { member in
+                                AmountRow(name: member.name, amount: Double(member.score))
+                            }
                         }
                     }
                 }
